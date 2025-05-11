@@ -17,6 +17,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer myApp.DB.Close()
 
 	myApp.Logger.Printf("we are running on port: %d\n", port)
 
