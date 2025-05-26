@@ -3,12 +3,36 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 type password struct {
 	plainText *string
 	hash      []byte
+}
+
+func (p *password) Set(plaintextPassword string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
+	if err != nil {
+		return err
+	}
+	p.plainText = &plaintextPassword
+	p.hash = hash
+	return nil
+}
+
+func (p *password) Matches(plainTextPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plainTextPassword))
+	if err != nil {
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 type User struct {
@@ -47,6 +71,8 @@ func (s *PostgresUserStore) CreateUser(user *User) error {
 	return nil
 }
 
+// GetUserByUsername returns the user with the provided username.
+// Returns nil if no user is found. TODO (Joshua): Add a handler/test for this
 func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	user := &User{
 		PasswordHash: password{},
@@ -66,6 +92,8 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	return user, nil
 }
 
+// UpdateUser updates the user's details in the database based on the provided user ID.
+// Returns an error if the update fails or if no rows are affected. TODO (Joshua): Add a handler/test for this
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `UPDATE users SET username = $1, email = $2, bio = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4`
 	result, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.ID)

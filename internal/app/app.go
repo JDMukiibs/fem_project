@@ -2,9 +2,9 @@ package app
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/jdmukiibs/femProject/internal/api"
 	"github.com/jdmukiibs/femProject/internal/store"
+	"github.com/jdmukiibs/femProject/internal/utils"
 	"github.com/jdmukiibs/femProject/migrations"
 	"log"
 	"net/http"
@@ -14,6 +14,7 @@ import (
 type Application struct {
 	Logger         *log.Logger
 	WorkoutHandler *api.WorkoutHandler
+	UserHandler    *api.UserHandler
 	DB             *sql.DB
 }
 
@@ -32,13 +33,16 @@ func NewApplication() (*Application, error) {
 
 	// our stores will go here
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
+	userStore := store.NewPostgresUserStore(pgDB)
 
 	// our handlers will go here
 	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
+	userHandler := api.NewUserHandler(userStore, logger)
 
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: workoutHandler,
+		UserHandler:    userHandler,
 		DB:             pgDB,
 	}
 
@@ -46,5 +50,6 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Status is available\n")
+	a.Logger.Printf("Status is available\n")
+	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"status": "available"})
 }

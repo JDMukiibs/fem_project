@@ -1,9 +1,12 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/jdmukiibs/femProject/internal/store"
+	"github.com/jdmukiibs/femProject/internal/utils"
 	"log"
+	"net/http"
 	"regexp"
 )
 
@@ -50,4 +53,43 @@ func (h *UserHandler) validateRegisterRequest(reg *registerUserRequest) error {
 	return nil
 }
 
-// TODO: Implement remaining handlers
+func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
+	var req registerUserRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		h.logger.Printf("ERROR: decodingRegisterRequest: %v\n", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
+		return
+	}
+
+	err = h.validateRegisterRequest(&req)
+	if err != nil {
+		h.logger.Printf("ERROR: validateRegisterRequest: %v\n", err)
+	}
+
+	user := &store.User{
+		Username: req.Username,
+		Email:    req.Email,
+	}
+
+	if req.Bio != "" {
+		user.Bio = req.Bio
+	}
+
+	err = user.PasswordHash.Set(req.Password)
+	if err != nil {
+		h.logger.Printf("ERROR: setPasswordHash: %v\n", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	err = h.userStore.CreateUser(user)
+	if err != nil {
+		h.logger.Printf("ERROR: createUser: %v\n", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"message": "user created", "user": user})
+}
