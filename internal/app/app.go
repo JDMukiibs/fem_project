@@ -3,6 +3,7 @@ package app
 import (
 	"database/sql"
 	"github.com/jdmukiibs/femProject/internal/api"
+	"github.com/jdmukiibs/femProject/internal/middleware"
 	"github.com/jdmukiibs/femProject/internal/store"
 	"github.com/jdmukiibs/femProject/internal/utils"
 	"github.com/jdmukiibs/femProject/migrations"
@@ -16,6 +17,7 @@ type Application struct {
 	WorkoutHandler *api.WorkoutHandler
 	UserHandler    *api.UserHandler
 	TokenHandler   *api.TokenHandler
+	Middleware     middleware.UserMiddleware
 	DB             *sql.DB
 }
 
@@ -41,12 +43,14 @@ func NewApplication() (*Application, error) {
 	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
+	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
 
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: workoutHandler,
 		UserHandler:    userHandler,
 		TokenHandler:   tokenHandler,
+		Middleware:     middlewareHandler,
 		DB:             pgDB,
 	}
 

@@ -123,8 +123,8 @@ curl -X POST http://localhost:8080/tokens/authentication \
 curl -X POST "http://localhost:8080/users" \
      -H "Content-Type: application/json" \
      -d '{
-          "username": "johndoe",
-          "email": "johndoe@example.com",
+          "username": "jdmukiibs",
+          "email": "jdmukiibs@example.com",
           "password": "SecureP@ssword123",
           "bio": "Fitness enthusiast and software developer"
         }'
